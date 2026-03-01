@@ -14,7 +14,52 @@
 
 ## 活跃问题
 
-(暂无)
+### ISSUE-001: Docker 未安装
+
+#### 元信息
+- 状态: 🆕
+- 类型: [BLOCKER] 阻塞
+- 影响: 高
+- 关联任务: TASK-001
+- 发现时间: 2026-03-01
+- 发现者: Executor
+
+#### 问题描述
+执行 TASK-001 Dify 本地部署时，发现系统未安装 Docker。
+- `docker --version` 返回 "command not found"
+- `docker-compose --version` 返回 "command not found"
+
+#### 解决方案
+安装 Docker Desktop for Windows:
+
+1. **下载 Docker Desktop**
+   - 访问: https://www.docker.com/products/docker-desktop/
+   - 或使用 winget: `winget install Docker.DockerDesktop`
+
+2. **系统要求**
+   - Windows 10/11 64-bit
+   - 启用 WSL 2 或 Hyper-V
+   - 至少 8GB RAM (推荐 16GB)
+
+3. **安装步骤**
+   ```powershell
+   # 方法1: 使用 winget (推荐)
+   winget install Docker.DockerDesktop
+
+   # 方法2: 手动下载安装
+   # 下载后运行安装程序，重启电脑
+   ```
+
+4. **安装后验证**
+   ```powershell
+   docker --version
+   docker-compose --version
+   docker run hello-world
+   ```
+
+#### 需要支持
+- 用户确认是否可以安装 Docker Desktop
+- 确认系统是否满足要求 (WSL2/Hyper-V)
 
 ---
 
