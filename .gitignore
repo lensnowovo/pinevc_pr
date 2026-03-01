@@ -1,0 +1,62 @@
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+ENV/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 构建输出
+dist/
+build/
+*.egg-info/
+
+# 日志
+*.log
+logs/
+
+# 敏感配置
+secrets/
+*.pem
+*.key
+
+# Dify 相关
+dify/
+.docker/
+
+# 临时文件
+tmp/
+temp/
+*.tmp
+
+# 大文件 (参考文档保留)
+# *.pdf
