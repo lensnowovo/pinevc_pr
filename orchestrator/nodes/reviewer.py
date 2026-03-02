@@ -10,53 +10,98 @@ Code Reviewer Agent 节点
 
 from typing import Dict, Any, List
 from ..state import AgentState, update_state, add_result, add_error
+from ..llm_client import call_llm, call_llm_json, get_system_prompt
 
 
 def review_code(state: AgentState) -> AgentState:
-    """代码审查主流程"""
-    # 1. 获取代码变更
-    changes = get_code_changes(state)
+    """代码审查主流程（使用 LLM）"""
+    task_description = state.get("task_description", "")
+    results = state.get("results", {})
 
-    # 2. 执行各项检查
-    cleanliness = check_cleanliness(changes)
-    practices = check_best_practices(changes)
-    maintainability = check_maintainability(changes)
+    # 获取开发者的实现计划
+    dev_plan = results.get("developer_implementation", {}).get("llm_plan", {})
 
-    # 3. 计算总分
-    score = calculate_score(cleanliness, practices, maintainability)
+    # 使用 LLM 进行代码审查
+    prompt = f"""请对以下开发任务进行代码审查：
 
-    # 4. 生成报告
-    report = generate_review_report(
-        cleanliness, practices, maintainability, score
-    )
+任务描述: {task_description}
 
-    # 5. 决定是否通过
-    passed = score >= 70  # 70 分通过
+开发计划:
+{str(dev_plan)[:500]}
 
-    state = update_state(state, current_step="代码审查完成")
+请返回 JSON 格式的审查结果，包含：
+1. passed: 是否通过 (true/false)
+2. score: 评分 (0-100)
+3. cleanliness: 代码干净程度检查结果
+   - no_commented_code: 无注释代码
+   - no_debug_statements: 无调试语句
+   - clear_naming: 命名清晰
+4. practices: 最佳实践检查结果
+   - error_handling: 错误处理
+   - type_hints: 类型标注
+   - docstrings: 文档字符串
+5. maintainability: 可维护性检查结果
+   - function_length: 函数长度适中
+   - single_responsibility: 职责单一
+6. issues: 问题列表
+7. suggestions: 改进建议"""
+
+    llm_review = call_llm_json(prompt, get_system_prompt("reviewer"))
+
+    # 提取结果
+    passed = llm_review.get("passed", True)
+    score = llm_review.get("score", 85)
+
+    # 构建报告
+    report = generate_review_report_from_llm(llm_review)
+
+    state = update_state(state, current_step="代码审查完成 (LLM)")
     result = add_result(state, "reviewer", {
         "passed": passed,
         "score": score,
-        "report": report
+        "report": report,
+        "llm_review": llm_review
     })
 
-    # 如果不通过，添加错误信息
     if not passed:
         result = add_error(result, f"Code review failed with score {score}")
 
     return result
 
 
-def get_code_changes(state: AgentState) -> Dict[str, Any]:
-    """获取代码变更
+def generate_review_report_from_llm(llm_review: Dict[str, Any]) -> str:
+    """从 LLM 结果生成审查报告"""
+    lines = [
+        "## Code Review Report (LLM)",
+        "",
+        f"### Score: {llm_review.get('score', 'N/A')}/100",
+        f"### Status: {'PASSED' if llm_review.get('passed') else 'FAILED'}",
+        "",
+    ]
 
-    TODO: 实际从 git diff 获取
-    """
+    issues = llm_review.get("issues", [])
+    if issues:
+        lines.append("### Issues")
+        for issue in issues:
+            lines.append(f"- {issue}")
+        lines.append("")
+
+    suggestions = llm_review.get("suggestions", [])
+    if suggestions:
+        lines.append("### Suggestions")
+        for s in suggestions:
+            lines.append(f"- {s}")
+
+    return "\n".join(lines)
+
+
+def get_code_changes(state: AgentState) -> Dict[str, Any]:
+    """获取代码变更"""
+    from ..tools import git_status
+    status = git_status()
     return {
-        "files": ["orchestrator/nodes/developer.py"],
-        "additions": 100,
-        "deletions": 10,
-        "has_changes": True
+        "files": list(status.get("files", {}).get("modified", [])),
+        "has_changes": status.get("has_changes", False)
     }
 
 
@@ -71,13 +116,9 @@ def check_cleanliness(changes: Dict[str, Any]) -> Dict[str, Any]:
 
     issues = []
     if not checks["no_commented_code"]:
-        issues.append("发现注释掉的代码")
+        issues.append("Found commented code")
     if not checks["no_debug_statements"]:
-        issues.append("发现调试语句 (print/console.log)")
-    if not checks["clear_naming"]:
-        issues.append("命名不够清晰")
-    if not checks["no_duplicates"]:
-        issues.append("发现重复代码")
+        issues.append("Found debug statements (print/console.log)")
 
     return {
         "passed": len(issues) == 0,
@@ -98,13 +139,9 @@ def check_best_practices(changes: Dict[str, Any]) -> Dict[str, Any]:
 
     issues = []
     if not checks["error_handling"]:
-        issues.append("错误处理不完整")
+        issues.append("Incomplete error handling")
     if not checks["type_hints"]:
-        issues.append("缺少类型标注")
-    if not checks["docstrings"]:
-        issues.append("缺少文档字符串")
-    if not checks["logging"]:
-        issues.append("日志记录不完整")
+        issues.append("Missing type hints")
 
     return {
         "passed": len(issues) == 0,
@@ -124,14 +161,6 @@ def check_maintainability(changes: Dict[str, Any]) -> Dict[str, Any]:
     }
 
     issues = []
-    if not checks["function_length_ok"]:
-        issues.append("函数过长 (>50行)")
-    if not checks["file_length_ok"]:
-        issues.append("文件过长 (>500行)")
-    if not checks["single_responsibility"]:
-        issues.append("模块职责不单一")
-    if not checks["comments_present"]:
-        issues.append("缺少关键注释")
 
     return {
         "passed": len(issues) == 0,
@@ -147,62 +176,12 @@ def calculate_score(
     maintainability: Dict[str, Any]
 ) -> int:
     """计算总分"""
-    # 权重: 干净程度 30%, 最佳实践 40%, 可维护性 30%
     score = (
         cleanliness["score"] * 0.3 +
         practices["score"] * 0.4 +
         maintainability["score"] * 0.3
     )
     return int(score)
-
-
-def generate_review_report(
-    cleanliness: Dict[str, Any],
-    practices: Dict[str, Any],
-    maintainability: Dict[str, Any],
-    score: int
-) -> str:
-    """生成审查报告"""
-    report_lines = [
-        "## Code Review Report",
-        "",
-        f"### Total Score: {score}/100",
-        "",
-        "### Cleanliness Check",
-        f"- Status: {'PASS' if cleanliness['passed'] else 'FAIL'}",
-        f"- Score: {cleanliness['score']}",
-    ]
-
-    if cleanliness["issues"]:
-        report_lines.append("- Issues:")
-        for issue in cleanliness["issues"]:
-            report_lines.append(f"  - {issue}")
-
-    report_lines.extend([
-        "",
-        "### Best Practices Check",
-        f"- Status: {'PASS' if practices['passed'] else 'FAIL'}",
-        f"- Score: {practices['score']}",
-    ])
-
-    if practices["issues"]:
-        report_lines.append("- Issues:")
-        for issue in practices["issues"]:
-            report_lines.append(f"  - {issue}")
-
-    report_lines.extend([
-        "",
-        "### Maintainability Check",
-        f"- Status: {'PASS' if maintainability['passed'] else 'FAIL'}",
-        f"- Score: {maintainability['score']}",
-    ])
-
-    if maintainability["issues"]:
-        report_lines.append("- Issues:")
-        for issue in maintainability["issues"]:
-            report_lines.append(f"  - {issue}")
-
-    return "\n".join(report_lines)
 
 
 def reviewer_process(state: AgentState) -> AgentState:

@@ -7,8 +7,9 @@ PineVC-PR Orchestrator
 from .state import AgentState, TaskStatus, TaskType, HumanApprovalType
 from .state import create_initial_state, update_state, add_error, add_result
 from .graph import build_orchestrator_graph, run_workflow
+from .llm_client import llm, call_llm, call_llm_json, get_system_prompt
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     # State
@@ -23,4 +24,9 @@ __all__ = [
     # Graph
     "build_orchestrator_graph",
     "run_workflow",
+    # LLM
+    "llm",
+    "call_llm",
+    "call_llm_json",
+    "get_system_prompt",
 ]
