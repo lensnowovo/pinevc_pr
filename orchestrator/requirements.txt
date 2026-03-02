@@ -8,6 +8,9 @@ langgraph>=0.2.0
 langchain>=0.3.0
 langchain-anthropic>=0.3.0
 
+# Anthropic SDK - Claude API
+anthropic>=0.40.0
+
 # Pydantic - 数据验证
 pydantic>=2.0.0
 pydantic-settings>=2.0.0

@@ -110,26 +110,62 @@ class LLMClient:
 
     def _mock_response(self, prompt: str) -> str:
         """模拟响应（用于测试）"""
-        if "分析" in prompt or "analyze" in prompt.lower():
+        # 注意：更具体的匹配要放在前面，避免被通用匹配覆盖
+        if "审查" in prompt or "review" in prompt.lower():
+            return json.dumps({
+                "passed": True,
+                "score": 85,
+                "cleanliness": {
+                    "no_commented_code": True,
+                    "no_debug_statements": True,
+                    "clear_naming": True
+                },
+                "practices": {
+                    "error_handling": True,
+                    "type_hints": True,
+                    "docstrings": True
+                },
+                "maintainability": {
+                    "function_length": True,
+                    "single_responsibility": True
+                },
+                "issues": [],
+                "suggestions": ["代码质量良好，继续保持"]
+            }, ensure_ascii=False)
+        elif "安全审计" in prompt or "security" in prompt.lower():
+            return json.dumps({
+                "passed": True,
+                "risk_level": "low",
+                "code_security": {
+                    "no_hardcoded_secrets": True,
+                    "no_injection_risks": True,
+                    "proper_error_handling": True
+                },
+                "config_security": {
+                    "env_protected": True,
+                    "secure_defaults": True
+                },
+                "content_security": {
+                    "no_internal_info": True,
+                    "no_confidential_data": True
+                },
+                "issues": [],
+                "recommendations": ["定期更新依赖以修复安全漏洞"]
+            }, ensure_ascii=False)
+        elif "分析" in prompt or "analyze" in prompt.lower():
             return json.dumps({
                 "analysis": "任务分析完成",
                 "complexity": "medium",
                 "estimated_time": "2 hours"
             }, ensure_ascii=False)
+        elif "开发" in prompt or "develop" in prompt.lower() or "实现" in prompt:
+            return json.dumps({
+                "plan": "实现计划",
+                "steps": ["分析需求", "编写代码", "编写测试"],
+                "estimated_time": "3 hours"
+            }, ensure_ascii=False)
         elif "代码" in prompt or "code" in prompt.lower():
             return "# Generated code\npass\n"
-        elif "审查" in prompt or "review" in prompt.lower():
-            return json.dumps({
-                "passed": True,
-                "score": 85,
-                "issues": []
-            }, ensure_ascii=False)
-        elif "安全" in prompt or "security" in prompt.lower():
-            return json.dumps({
-                "passed": True,
-                "risk_level": "low",
-                "issues": []
-            }, ensure_ascii=False)
         else:
             return "LLM mock response"
 
