@@ -21,6 +21,7 @@ class LLMBackend(Enum):
     """LLM 后端类型"""
     ANTHROPIC = "anthropic"
     OPENAI = "openai"
+    ZHIPUAI = "zhipuai"
     OLLAMA = "ollama"
     HTTP = "http"
     MOCK = "mock"
@@ -45,6 +46,7 @@ def get_config_from_env() -> LLMConfig:
     backend_map = {
         "anthropic": LLMBackend.ANTHROPIC,
         "openai": LLMBackend.OPENAI,
+        "zhipuai": LLMBackend.ZHIPUAI,
         "ollama": LLMBackend.OLLAMA,
         "http": LLMBackend.HTTP,
         "mock": LLMBackend.MOCK,
@@ -96,6 +98,21 @@ class LLMClient:
                 print("[LLM] Warning: openai package not installed, falling back to mock")
                 self.config.backend = LLMBackend.MOCK
 
+        elif self.config.backend == LLMBackend.ZHIPUAI:
+            # 智谱 AI 使用 OpenAI 兼容 API
+            try:
+                from openai import OpenAI
+                self._client = OpenAI(
+                    api_key=self.config.api_key or os.environ.get("ZHIPUAI_API_KEY", ""),
+                    base_url=self.config.base_url or "https://open.bigmodel.cn/api/paas/v4/"
+                )
+                if not self.config.api_key and not os.environ.get("ZHIPUAI_API_KEY"):
+                    print("[LLM] Warning: ZHIPUAI_API_KEY not set, falling back to mock")
+                    self.config.backend = LLMBackend.MOCK
+            except ImportError:
+                print("[LLM] Warning: openai package not installed, falling back to mock")
+                self.config.backend = LLMBackend.MOCK
+
         elif self.config.backend == LLMBackend.OLLAMA:
             # Ollama 使用 OpenAI 兼容 API
             try:
@@ -134,7 +151,7 @@ class LLMClient:
         elif self.config.backend == LLMBackend.ANTHROPIC:
             return self._call_anthropic(prompt, system_prompt, max_tokens, temperature)
 
-        elif self.config.backend in [LLMBackend.OPENAI, LLMBackend.OLLAMA]:
+        elif self.config.backend in [LLMBackend.OPENAI, LLMBackend.OLLAMA, LLMBackend.ZHIPUAI]:
             return self._call_openai(prompt, system_prompt, max_tokens, temperature)
 
         elif self.config.backend == LLMBackend.HTTP:
@@ -370,6 +387,7 @@ def configure_llm(
     backend_map = {
         "anthropic": LLMBackend.ANTHROPIC,
         "openai": LLMBackend.OPENAI,
+        "zhipuai": LLMBackend.ZHIPUAI,
         "ollama": LLMBackend.OLLAMA,
         "http": LLMBackend.HTTP,
         "mock": LLMBackend.MOCK,

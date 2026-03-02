@@ -28,13 +28,13 @@
 | TASK-017 Operator 节点 | P1 | 1h | TASK-016 |
 | TASK-018 端到端测试 | P0 | 1h | TASK-017 |
 
-### ~~原 Dify/n8n 任务~~ (降级为后续由 Agent 执行)
+### ~~原 Dify/n8n 任务~~ (已完成)
 
 | 任务 | 状态 | 说明 |
 |------|------|------|
-| TASK-001 Dify 本地部署 | ⏸️ 暂缓 | 由 Operator Agent 执行 |
-| TASK-002 n8n 本地部署 | ⏸️ 暂缓 | 由 Operator Agent 执行 |
-| TASK-003~007 知识库/工作流 | ⏸️ 暂缓 | 由 Developer Agent 执行 |
+| TASK-001 Dify 本地部署 | ✅ 完成 | Docker Compose 部署 |
+| TASK-002 n8n 本地部署 | ✅ 完成 | Docker Compose 部署 |
+| TASK-003~007 知识库/工作流 | ⏸️ 待执行 | 需要在 Dify 中配置 |
 
 ### 🟡 进行中
 
@@ -46,7 +46,8 @@
 
 | 任务 | 完成时间 | 实际工时 |
 |------|----------|----------|
-| (暂无) | - | - |
+| TASK-001 Dify 本地部署 | 2026-03-02 | 0.5h |
+| TASK-002 n8n 本地部署 | 2026-03-02 | 0.5h |
 
 ### 🔵 阻塞
 
@@ -63,13 +64,22 @@
 **今日计划**:
 - [x] 阅读架构文档 (AGENT-ARCHITECTURE.md, ADR-002)
 - [x] 更新 SPRINT.md 任务列表
+- [x] TASK-001: Dify 本地部署 ✅
+- [x] TASK-002: n8n 本地部署 ✅
 - [ ] TASK-010: Orchestrator 基础框架
   - [ ] 创建 orchestrator/ 目录结构
   - [ ] 实现 state.py 状态定义
   - [ ] 实现 graph.py 工作流骨架
 
+**完成事项**:
+- 创建 `deploy/` 目录，包含 Docker Compose 配置
+- Dify 服务组 (api, web, worker, postgres, redis, weaviate)
+- n8n 服务
+- 启动脚本 (start.sh, start.bat)
+- 部署文档 (README.md)
+
 **风险/问题**:
-- ~~需要 Docker 环境~~ → Orchestrator 优先，无需 Docker
+- ~~需要 Docker 环境~~ → Docker Desktop 已启动
 - LangGraph 依赖需要 pip install
 
 ---
