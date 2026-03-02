@@ -111,7 +111,28 @@ class LLMClient:
     def _mock_response(self, prompt: str) -> str:
         """模拟响应（用于测试）"""
         # 注意：更具体的匹配要放在前面，避免被通用匹配覆盖
-        if "审查" in prompt or "review" in prompt.lower():
+        # 安全审计要优先于代码审查（因为安全审计 prompt 可能包含 "审查" 字样）
+        if "安全审计" in prompt or "security" in prompt.lower() or ("安全" in prompt and "审计" in prompt):
+            return json.dumps({
+                "passed": True,
+                "risk_level": "low",
+                "code_security": {
+                    "no_hardcoded_secrets": True,
+                    "no_injection_risks": True,
+                    "proper_error_handling": True
+                },
+                "config_security": {
+                    "env_protected": True,
+                    "secure_defaults": True
+                },
+                "content_security": {
+                    "no_internal_info": True,
+                    "no_confidential_data": True
+                },
+                "issues": [],
+                "recommendations": ["定期更新依赖以修复安全漏洞"]
+            }, ensure_ascii=False)
+        elif "代码审查" in prompt or "review" in prompt.lower():
             return json.dumps({
                 "passed": True,
                 "score": 85,
@@ -131,26 +152,6 @@ class LLMClient:
                 },
                 "issues": [],
                 "suggestions": ["代码质量良好，继续保持"]
-            }, ensure_ascii=False)
-        elif "安全审计" in prompt or "security" in prompt.lower():
-            return json.dumps({
-                "passed": True,
-                "risk_level": "low",
-                "code_security": {
-                    "no_hardcoded_secrets": True,
-                    "no_injection_risks": True,
-                    "proper_error_handling": True
-                },
-                "config_security": {
-                    "env_protected": True,
-                    "secure_defaults": True
-                },
-                "content_security": {
-                    "no_internal_info": True,
-                    "no_confidential_data": True
-                },
-                "issues": [],
-                "recommendations": ["定期更新依赖以修复安全漏洞"]
             }, ensure_ascii=False)
         elif "分析" in prompt or "analyze" in prompt.lower():
             return json.dumps({
